@@ -274,6 +274,24 @@ PostgreSQL runs as a system service and starts automatically — no manual actio
 
 ---
 
+## Crash Recovery
+
+Temporal persists the state of every workflow execution in its database (`temporal.db`). Every time an activity completes, the result is written to disk before the workflow moves to the next step. On restart, the workflow function replays from the beginning but Temporal intercepts every activity call — if the result is already in the history, it returns it instantly without re-running the activity. This means no duplicate DB inserts, no duplicate webhook POSTs, even after a crash mid-run.
+
+The Worker is stateless — all state lives in the Temporal server's database. If the Worker crashes mid-activity, Temporal marks it as failed and retries it when the Worker comes back. The workflow simply waits.
+
+| What crashed | Data lost | Action needed |
+|---|---|---|
+| Worker only | Nothing | Restart worker |
+| Temporal server only | Nothing (SQLite on disk) | Restart server |
+| Worker + Temporal server | Nothing | Restart both |
+| Everything | Nothing | Restart in order: postgres → server → worker |
+| VM wiped / `temporal.db` deleted | Workflow history + schedules lost | Re-run `create_schedule.py` |
+
+**Important:** This guarantee only holds when the server is started with `--db-filename temporal.db`. Without that flag, `start-dev` uses an in-memory database and all state is lost on server restart.
+
+---
+
 ## Key Design Notes
 
 | Item | Value |
