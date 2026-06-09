@@ -82,10 +82,12 @@ Server started at `localhost:7233` and UI at `http://localhost:8233`. But openin
 
 **Reason:** By default the server binds to `127.0.0.1` — only accessible from the VM itself, not from outside.
 
-**Fix — Part 1:** Bind to all interfaces:
+**Fix — Part 1:** Bind to all interfaces and persist state to a file:
 ```bash
-temporal server start-dev --ui-ip 0.0.0.0 --ip 0.0.0.0
+temporal server start-dev --ui-ip 0.0.0.0 --ip 0.0.0.0 --db-filename temporal.db
 ```
+
+`--db-filename temporal.db` stores workflow history and schedules in a SQLite file on disk. Without this flag, `start-dev` uses an in-memory database — everything is lost when the server is killed.
 
 **Fix — Part 2:** OCI VM OS firewall was still blocking port 8233.
 
@@ -240,7 +242,8 @@ After all setup is complete, the full running order is:
 
 ```bash
 # Terminal 1 — Temporal server (keep running)
-temporal server start-dev --ui-ip 0.0.0.0 --ip 0.0.0.0
+# --db-filename persists workflow history and schedules across restarts
+temporal server start-dev --ui-ip 0.0.0.0 --ip 0.0.0.0 --db-filename temporal.db
 
 # Terminal 2 — Worker (keep running)
 source .venv/bin/activate
