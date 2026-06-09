@@ -4,6 +4,8 @@ from temporalio import activity
 
 DB_URL = "postgresql://postgres:postgres@localhost/postgres"
 BILLABLE_WEBHOOK_URL = "http://localhost:5678/webhook/process-event"
+CONTROLLER_URL = "https://YOUR_CONTROLLER_URL"
+API_KEY = "YOUR_API_KEY"
 
 
 @activity.defn
@@ -20,10 +22,12 @@ async def read_last_run_timestamp() -> str:
 
 @activity.defn
 async def fetch_events(range_from: str, range_to: str) -> list:
+    headers = {"x-api-key": API_KEY}
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            "https://YOUR_CONTROLLER_URL/apis/dashboard.envmgmt.io/v1/events/paas/partner/kind/compute/instance",
+            f"{CONTROLLER_URL}/apis/dashboard.envmgmt.io/v1/events/paas/partner/kind/compute/instance",
             params={"range_from": range_from, "range_to": range_to, "limit": 30},
+            headers=headers,
             ssl=False
         ) as resp:
             data = await resp.json()
